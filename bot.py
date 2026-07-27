@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 logging.basicConfig(level=logging.INFO)
 
 # === CONFIG ===
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Railway environment variable
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("❌ BOT_TOKEN not set!")
 
