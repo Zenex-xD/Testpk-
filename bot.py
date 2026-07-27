@@ -23,6 +23,10 @@ if ALLOWED_USER_IDS:
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN not set in environment variables")
 
+# If ALLOWED_USER_IDS is not set, default to the single user provided (1817159548)
+if not ALLOWED_USER_IDS:
+    ALLOWED_USER_IDS = [1817159548]
+
 # === HELPERS ===
 
 def _normalize_url(url: str) -> str:
